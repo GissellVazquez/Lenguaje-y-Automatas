@@ -15,23 +15,24 @@ namespace Grafos_Dijkstra2
             Aristas=new List<Arista>();
            
                 }
-        public void AgregarNodo (int id)
+        public void AgregarNodo (string id)
         {
             Nodos.Add(new Nodo(id));
         }
-        public void AgregarArista(int origen, int destino, int peso)
+        public void AgregarArista(string origen, string destino, int peso)
         {
             Nodo nodoOrigen = Nodos.First(n=> n.Id == origen);
             Nodo nodoDestino = Nodos.First(n=> n.Id == destino);
            
             var arista = new Arista(nodoOrigen,nodoDestino, peso);
             nodoOrigen.Aristas.Add(arista);
+            Aristas.Add(arista);
         }
         //Algoritmo metodo Dijstra
-        public (List<int> camino, int pesoTotal) Dijkstra(int inicio, int fin)
+        public (List<string> camino, int pesoTotal) Dijkstra(string inicio, string fin)
         {
-            var distancias = new Dictionary<int, int>();
-            var anteriores = new Dictionary<int, int?>();
+            var distancias = new Dictionary<string, int>();
+            var anteriores = new Dictionary<string, string?>();
             var noVisitados = new List<Nodo>();
 
             foreach (var nodo in Nodos)
@@ -52,8 +53,9 @@ namespace Grafos_Dijkstra2
                     break;
                 foreach (var Arista in actual.Aristas)
                 {
-                    if (distancias[actual.Id] == int.MaxValue) continue;
+                    
                     int alternativa = distancias[actual.Id] + Arista.Peso;
+                    if (alternativa < distancias[Arista.Destino.Id])
                     {
                         distancias[Arista.Destino.Id] = alternativa;
                         anteriores[Arista.Destino.Id] = actual.Id;
@@ -64,18 +66,64 @@ namespace Grafos_Dijkstra2
             }
             if (distancias[fin] == int.MaxValue)
             {
-                return (new List<int>(), 0);
+                return (new List<string>(), 0);
             }
 
             //Reconstruir
-            var camino = new List<int>();
-            int? nodoActual = fin;
+            var camino = new List<string>();
+            string? nodoActual = fin;
             while (nodoActual != null)
             {
-                camino.Insert(0, nodoActual.Value);
-                nodoActual = anteriores[nodoActual.Value];
+                camino.Insert(0, nodoActual);
+                nodoActual = anteriores[nodoActual];
             }
             return (camino, distancias[fin]);
         }
+
+        //Metodo del arbol expandido 
+        public (List<Arista> arbol, int pesoTotal) Kruskal()
+        {
+            var resultado = new List<Arista>();
+            int pesoTotal = 0;
+
+            // Ordenar aristas por peso
+            var aristasOrdenadas = Aristas.OrderBy(a => a.Peso).ToList();
+
+            // Estructura para evitar ciclos
+            Dictionary<string, string> padre = new Dictionary<string, string>();
+
+            foreach (var nodo in Nodos)
+                padre[nodo.Id] = nodo.Id;
+
+            string Encontrar(string nodo)
+            {
+                if (padre[nodo] != nodo)
+                    padre[nodo] = Encontrar(padre[nodo]);
+                return padre[nodo];
+            }
+
+            void Unir(string a, string b)
+            {
+                string raizA = Encontrar(a);
+                string raizB = Encontrar(b);
+                padre[raizB] = raizA;
+            }
+
+            foreach (var arista in aristasOrdenadas)
+            {
+                string origen = Encontrar(arista.Origen.Id);
+                string destino = Encontrar(arista.Destino.Id);
+
+                if (origen != destino)
+                {
+                    resultado.Add(arista);
+                    pesoTotal += arista.Peso;
+                    Unir(origen, destino);
+                }
+            }
+
+            return (resultado, pesoTotal);
+        }
+
     }
 }
